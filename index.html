@@ -159,6 +159,11 @@ html, body { height: 100%; background: #f2f0eb; font-family: -apple-system, 'Seg
     <div class="mf"><label>תאריך</label><input type="date" id="meta-date"></div>
     <div class="mf"><label>שעה</label><input type="time" id="meta-time"></div>
     <div class="mf full"><label>שם הממלא</label><input type="text" id="meta-name" placeholder="שם מלא..."></div>
+    <div class="mf full">
+      <label>📧 כתובת מייל לשליחת דוח</label>
+      <input type="email" id="meta-email" placeholder="example@niretzion.co.il" autocomplete="email">
+      <span id="email-hint" style="font-size:10px;color:var(--text2);margin-top:3px;display:block">הדוח יישלח אוטומטית לכתובת זו בלחיצה על "אימייל"</span>
+    </div>
   </div>
 </div>
 
@@ -400,6 +405,10 @@ function validate() {
   return true;
 }
 
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function shareWA() {
   if(!validate()) return;
   window.open('https://wa.me/?text='+encodeURIComponent(buildReport()),'_blank');
@@ -409,8 +418,25 @@ function shareMail() {
   if(!validate()) return;
   const date=document.getElementById('meta-date').value;
   const name=document.getElementById('meta-name').value;
+  const emailVal=document.getElementById('meta-email').value.trim();
+
+  if(!emailVal) {
+    showToast('יש להזין כתובת מייל בתחילת הטופס');
+    document.getElementById('meta-email').focus();
+    document.getElementById('meta-email').style.borderColor='var(--danger-border)';
+    return;
+  }
+  if(!validateEmail(emailVal)) {
+    showToast('כתובת המייל אינה תקינה');
+    document.getElementById('meta-email').focus();
+    document.getElementById('meta-email').style.borderColor='var(--danger-border)';
+    return;
+  }
+
+  document.getElementById('meta-email').style.borderColor='var(--border)';
   const sub=encodeURIComponent(`בדיקת פתיחת יום עבודה – ${date} – ${name}`);
-  window.location.href=`mailto:?subject=${sub}&body=${encodeURIComponent(buildReport())}`;
+  window.location.href=`mailto:${encodeURIComponent(emailVal)}?subject=${sub}&body=${encodeURIComponent(buildReport())}`;
+  showToast(`שולח דוח אל ${emailVal}...`);
 }
 
 function dlPDF() {
