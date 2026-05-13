@@ -173,12 +173,12 @@ html, body { height: 100%; background: #f2f0eb; font-family: -apple-system, 'Seg
 </div>
 
 <div class="actions-bar">
-  <button class="btn-wa" onclick="shareWA()">📱 WhatsApp</button>
+  <button class="btn-wa" onclick="generateReport('wa')">📱 הכן לוואטסאפ</button>
   <div style="display:flex;gap:6px">
-    <button class="btn-mail" onclick="shareMail()" style="flex:1">✉ אימייל</button>
+    <button class="btn-mail" onclick="generateReport('mail')" style="flex:1">✉ אימייל</button>
     <button onclick="openEmailSetup()" title="הגדרות מייל" style="background:white;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 12px;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent">⚙️</button>
   </div>
-  <button class="btn-pdf" onclick="dlPDF()">📄 הורד דוח PDF</button>
+  <button class="btn-pdf" onclick="generateReport('pdf')">📄 הורד דוח PDF</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -413,11 +413,6 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function shareWA() {
-  if(!validate()) return;
-  window.open('https://wa.me/?text='+encodeURIComponent(buildReport()),'_blank');
-}
-
 // ── EmailJS send ──────────────────────────────────────────────
 function getEJSConfig() {
   return {
@@ -503,159 +498,282 @@ function shareMail() {
 const NIR_LOGO = 'data:image/png;base64,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';
 const NEAT_LOGO = 'data:image/png;base64,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';
 
-function buildPDFHtml() {
-  const date = document.getElementById('meta-date').value || 'לא צוין';
-  const time = document.getElementById('meta-time').value || '';
-  const name = document.getElementById('meta-name').value || 'לא צוין';
+function buildPDFHtml(mode) {
+  const date  = document.getElementById('meta-date').value  || 'לא צוין';
+  const time  = document.getElementById('meta-time').value  || '';
+  const name  = document.getElementById('meta-name').value  || 'לא צוין';
   const email = document.getElementById('meta-email').value || '';
 
   let totalOk=0, totalBad=0, totalNa=0, allIssues=[];
-
-  // Pre-scan for totals
   DEPTS.forEach(d => {
     Object.values(state[d.id].items).forEach(v => {
       if(v.status==='ok') totalOk++;
-      else if(v.status==='bad') { totalBad++; }
+      else if(v.status==='bad') totalBad++;
       else if(v.status==='na') totalNa++;
     });
     Object.entries(state[d.id].items).forEach(([item,v]) => {
-      if(v.status==='bad') allIssues.push({dept: d.name, item, note: v.note});
+      if(v.status==='bad') allIssues.push({dept:d.name, icon:d.icon, item, note:v.note, photos:v.photos});
     });
   });
 
-  const scoreColor = totalBad===0 ? '#3b6d11' : totalBad<=3 ? '#c87a00' : '#c0001a';
-
-  let deptsHTML = DEPTS.map(d => {
+  // ── Per-department sections ────────────────────────────────
+  const deptsHTML = DEPTS.map(d => {
     const items = state[d.id].items;
-    const dOk = Object.values(items).filter(v=>v.status==='ok').length;
+    const dOk  = Object.values(items).filter(v=>v.status==='ok').length;
     const dBad = Object.values(items).filter(v=>v.status==='bad').length;
-    const dNa = Object.values(items).filter(v=>v.status==='na').length;
+    const dNa  = Object.values(items).filter(v=>v.status==='na').length;
     const total = Object.keys(items).length;
-    const dColor = dBad>0 ? '#c0001a' : dOk===total ? '#3b6d11' : '#555';
+    const filled = dOk + dBad + dNa;
+    if (filled === 0) return ''; // skip empty departments
 
-    const tempsRows = d.temps.length ? d.temps.map(t => {
-      const v = state[d.id].temps[t] || 'לא נמדד';
-      return `<tr style="background:#fff8f0"><td style="padding:5px 10px;font-size:12px;color:#555">🌡 ${t}</td><td style="padding:5px 10px;font-size:12px;font-weight:600;color:#c87a00;text-align:left">${v}°C</td><td></td></tr>`;
-    }).join('') : '';
+    const hdrBg = dBad>0 ? '#c0001a' : '#1e2d1e';
+
+    const tempsRows = d.temps.length ? `
+      <tr><td colspan="2" style="background:#fff8ec;padding:0">
+        <table style="width:100%;border-collapse:collapse">
+          <tr style="background:#fff3db">
+            <td colspan="${d.temps.length}" style="padding:5px 12px;font-size:10px;font-weight:700;color:#8a5c00;letter-spacing:.4px;text-transform:uppercase">🌡 טמפרטורת חדרים</td>
+          </tr>
+          <tr>
+            ${d.temps.map(t => {
+              const v = state[d.id].temps[t] || '—';
+              const tempNum = parseFloat(v);
+              const tempColor = isNaN(tempNum) ? '#888' : tempNum > 8 ? '#c0001a' : '#2a6000';
+              return `<td style="padding:7px 12px;font-size:12px;border-left:1px solid #ffe5a0">
+                <div style="color:#666;font-size:10px;margin-bottom:2px">${t}</div>
+                <div style="font-size:18px;font-weight:700;color:${tempColor}">${v}${v!=='—'?'°C':''}</div>
+              </td>`;
+            }).join('')}
+          </tr>
+        </table>
+      </td></tr>` : '';
 
     const itemRows = Object.entries(items).map(([item, v]) => {
-      const icon = v.status==='ok' ? '✓' : v.status==='bad' ? '✗' : v.status==='na' ? '—' : '·';
-      const color = v.status==='ok' ? '#3b6d11' : v.status==='bad' ? '#c0001a' : '#888';
-      const bg = v.status==='bad' ? '#fff5f5' : 'white';
-      const statusText = v.status==='ok' ? 'תקין' : v.status==='bad' ? 'לא תקין' : v.status==='na' ? 'לא נבדק / לא רלוונטי' : 'לא הוזן';
+      if (!v.status) return ''; // skip unfilled
+      const isOk  = v.status==='ok';
+      const isBad = v.status==='bad';
+      const isNa  = v.status==='na';
+      const statusText = isOk?'תקין' : isBad?'לא תקין' : 'לא נבדק / לא רלוונטי';
+      const statusColor = isOk?'#2a6000' : isBad?'#c0001a' : '#888';
+      const statusBg    = isOk?'#f2faed' : isBad?'#fff5f5' : '#f8f8f8';
+      const statusIcon  = isOk?'✓' : isBad?'✗' : '—';
+      const rowBorder   = isBad ? 'border-right:3px solid #c0001a' : '';
 
-      const photoHtml = v.photos.length ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${
-        v.photos.map(src => `<img src="${src}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #ddd">`).join('')
-      }</div>` : '';
+      const noteHtml = v.note ? `
+        <div style="margin-top:6px;padding:5px 8px;background:#fffbf0;border-right:3px solid #e0a000;border-radius:3px;font-size:11px;color:#5a4000">
+          <span style="font-weight:700">הערה: </span>${v.note}
+        </div>` : '';
 
-      const noteHtml = v.note ? `<div style="margin-top:4px;font-size:11px;color:#555;background:#f5f4f0;padding:4px 8px;border-radius:4px;border-right:3px solid #c87a00">הערה: ${v.note}</div>` : '';
+      const photosHtml = v.photos && v.photos.length ? `
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px">
+          ${v.photos.map((src,i) => `
+            <div style="text-align:center">
+              <img src="${src}" style="width:120px;height:90px;object-fit:cover;border-radius:5px;border:1px solid #ddd;display:block">
+              <div style="font-size:9px;color:#aaa;margin-top:2px">תמונה ${i+1}</div>
+            </div>`).join('')}
+        </div>` : '';
 
-      return `<tr style="background:${bg};border-bottom:1px solid #eee">
-        <td style="padding:7px 10px;font-size:13px">
-          ${item}
-          ${noteHtml}
-          ${photoHtml}
-        </td>
-        <td style="padding:7px 10px;font-size:13px;font-weight:700;color:${color};text-align:left;white-space:nowrap">
-          ${icon} ${statusText}
-        </td>
-      </tr>`;
+      return `
+        <tr style="border-bottom:1px solid #eee;${rowBorder}background:${statusBg}">
+          <td style="padding:8px 12px;font-size:12px;vertical-align:top">
+            <div style="font-weight:${isBad?'700':'400'};color:${isBad?'#1a1a1a':'#333'}">${item}</div>
+            ${noteHtml}
+            ${photosHtml}
+          </td>
+          <td style="padding:8px 10px;text-align:center;vertical-align:top;white-space:nowrap;width:80px">
+            <div style="display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:12px;background:${statusColor}18;border:1px solid ${statusColor}40">
+              <span style="font-size:13px;font-weight:700;color:${statusColor}">${statusIcon}</span>
+              <span style="font-size:10px;font-weight:600;color:${statusColor}">${statusText}</span>
+            </div>
+          </td>
+        </tr>`;
     }).join('');
 
-    const deptNotesHtml = state[d.id].notes ? `<tr style="background:#fafaf8"><td colspan="2" style="padding:7px 10px;font-size:12px;color:#555;border-top:1px solid #eee"><strong>הערות:</strong> ${state[d.id].notes}</td></tr>` : '';
+    if (!itemRows.trim()) return '';
+
+    const deptNoteHtml = state[d.id].notes ? `
+      <tr><td colspan="2" style="padding:7px 12px;font-size:11px;color:#555;background:#f5f5f0;border-top:1px solid #eee">
+        <span style="font-weight:700">הערות כלליות: </span>${state[d.id].notes}
+      </td></tr>` : '';
 
     return `
-      <div style="margin-bottom:20px;page-break-inside:avoid">
-        <table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-radius:8px;overflow:hidden">
+      <div style="margin-bottom:18px;page-break-inside:avoid;border:1px solid #ddd;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+        <table style="width:100%;border-collapse:collapse">
           <thead>
-            <tr style="background:${dBad>0?'#c0001a':'#2d2d2d'}">
-              <th style="padding:9px 12px;text-align:right;color:white;font-size:14px;font-weight:700">
+            <tr style="background:${hdrBg}">
+              <th style="padding:10px 14px;text-align:right;color:white;font-size:14px;font-weight:700">
                 ${d.icon} ${d.name}
               </th>
-              <th style="padding:9px 12px;text-align:left;color:white;font-size:12px;font-weight:500;white-space:nowrap">
-                ✓${dOk} ✗${dBad} —${dNa}
+              <th style="padding:10px 12px;text-align:center;color:white;font-size:11px;font-weight:500;white-space:nowrap;width:100px">
+                <span style="color:#7eff7e">✓${dOk}</span> &nbsp;
+                <span style="color:#ffaaaa">✗${dBad}</span> &nbsp;
+                <span style="color:#ccc">—${dNa}</span>
               </th>
             </tr>
           </thead>
           <tbody>
             ${tempsRows}
             ${itemRows}
-            ${deptNotesHtml}
+            ${deptNoteHtml}
           </tbody>
         </table>
-      </div>
-    `;
+      </div>`;
   }).join('');
 
+  // ── Issues summary table ───────────────────────────────────
   const issuesSummary = allIssues.length ? `
-    <div style="background:#fff5f5;border:2px solid #e24b4a;border-radius:8px;padding:14px;margin-bottom:20px;page-break-inside:avoid">
-      <h3 style="color:#c0001a;margin-bottom:10px;font-size:14px">⚠️ ליקויים שדורשים טיפול (${allIssues.length})</h3>
+    <div style="margin-bottom:20px;border:2px solid #c0001a;border-radius:8px;overflow:hidden;page-break-inside:avoid">
+      <div style="background:#c0001a;padding:10px 14px;color:white;font-weight:700;font-size:13px">
+        ⚠️ ריכוז ליקויים שדורשים טיפול — ${allIssues.length} פריטים
+      </div>
       <table style="width:100%;border-collapse:collapse">
-        ${allIssues.map((iss,i)=>`
-          <tr style="border-bottom:1px solid #fdd">
-            <td style="padding:5px 8px;font-size:12px;font-weight:600;color:#555;width:24px">${i+1}.</td>
-            <td style="padding:5px 8px;font-size:12px"><strong>${iss.dept}</strong> — ${iss.item}</td>
-            <td style="padding:5px 8px;font-size:11px;color:#888">${iss.note||''}</td>
+        ${allIssues.map((iss,i) => `
+          <tr style="border-bottom:1px solid #fdd;background:${i%2?'#fffafa':'white'}">
+            <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#c0001a;width:28px">${i+1}</td>
+            <td style="padding:7px 10px;font-size:12px">
+              <strong>${iss.dept}</strong><br>
+              <span style="color:#444">${iss.item}</span>
+              ${iss.note?`<br><span style="font-size:11px;color:#888">📝 ${iss.note}</span>`:''}
+            </td>
+            <td style="padding:7px 8px;vertical-align:top">
+              ${iss.photos && iss.photos.length ? `<img src="${iss.photos[0]}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:1px solid #fcc">` : ''}
+            </td>
           </tr>`).join('')}
       </table>
-    </div>
-  ` : `<div style="background:#eaf3de;border:2px solid #639922;border-radius:8px;padding:12px;margin-bottom:20px;color:#3b6d11;font-weight:600;font-size:14px;text-align:center">✓ כל הפריטים תקינים</div>`;
+    </div>` :
+    `<div style="margin-bottom:20px;background:#eaf3de;border:2px solid #639922;border-radius:8px;padding:12px 16px;color:#2a6000;font-weight:700;font-size:14px;text-align:center">
+      ✓ כל הפריטים שנבדקו תקינים
+    </div>`;
+
+  // ── Top action bar HTML (changes by mode) ─────────────────
+  const waBtn = `
+    <button onclick="doWA()" style="background:#25d366;color:white;border:none;padding:11px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
+      📱 שתף ב-WhatsApp
+    </button>`;
+  const mailBtn = `
+    <button onclick="doMail()" style="background:#c0001a;color:white;border:none;padding:11px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
+      ✉️ שלח במייל אל: <strong>${email||'—'}</strong>
+    </button>`;
+  const printBtn = `
+    <button onclick="window.print()" style="background:#1a1a1a;color:white;border:none;padding:11px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
+      🖨️ הדפס / שמור PDF
+    </button>`;
+
+  const actionBtn = mode==='wa' ? waBtn : mode==='mail' ? mailBtn : printBtn;
+  const waScript  = mode==='wa' ? `
+    function doWA(){
+      var text = document.getElementById('wa-text').value;
+      window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+    }` : '';
+  const mailScript = mode==='mail' && email ? `
+    function doMail(){
+      var sub = encodeURIComponent(document.title);
+      var body = encodeURIComponent(document.getElementById('wa-text').value);
+      window.location.href = 'mailto:${email}?subject='+sub+'&body='+body;
+    }` : `function doMail(){}`;
+
+  // Build plain-text for WA/email sharing
+  let plainLines = [
+    'צ׳ק ליסט מפעל – ניר עציון',
+    `תאריך: ${date}  שעה: ${time}`,
+    `ממלא: ${name}`,
+    `סיכום: ✓${totalOk} תקין | ✗${totalBad} לא תקין | —${totalNa} לא נבדק`,
+    ''
+  ];
+  if (allIssues.length) {
+    plainLines.push('⚠️ ליקויים:');
+    allIssues.forEach((iss,i) => {
+      plainLines.push(`${i+1}. ${iss.dept} – ${iss.item}${iss.note?' ('+iss.note+')':''}`);
+    });
+    plainLines.push('');
+  } else {
+    plainLines.push('✓ כל הפריטים תקינים', '');
+  }
+  DEPTS.forEach(d => {
+    const filled = Object.values(state[d.id].items).filter(v=>v.status).length;
+    if (!filled) return;
+    plainLines.push(`${d.icon} ${d.name}:`);
+    if (d.temps.length) {
+      d.temps.forEach(t => {
+        const v = state[d.id].temps[t];
+        if (v) plainLines.push(`  🌡 ${t}: ${v}°C`);
+      });
+    }
+    Object.entries(state[d.id].items).forEach(([item,v]) => {
+      if (!v.status) return;
+      const s = v.status==='ok'?'✓':v.status==='bad'?'✗':'—';
+      const statusHe = v.status==='ok'?'תקין':v.status==='bad'?'לא תקין':'לא נבדק';
+      plainLines.push(`  ${s} ${item} – ${statusHe}${v.note?' | '+v.note:''}`);
+    });
+    if (state[d.id].notes) plainLines.push(`  📝 ${state[d.id].notes}`);
+    plainLines.push('');
+  });
+  const plainText = plainLines.join('\n');
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
 <meta charset="UTF-8">
-<title>דוח בדיקת פתיחת יום עבודה – ${date}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>צ'ק ליסט מפעל ניר עציון – ${date} – ${name}</title>
 <style>
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family: Arial, 'Segoe UI', sans-serif; font-size:13px; color:#1a1a1a; background:white; direction:rtl; }
-  @media print {
-    body { margin: 0; }
-    .no-print { display: none !important; }
-    @page { margin: 15mm; }
-  }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family: Arial, 'Segoe UI', Tahoma, sans-serif; font-size:13px; color:#1a1a1a; background:white; direction:rtl; }
+@media print {
+  .no-print { display:none !important; }
+  @page { margin:12mm 10mm; size:A4; }
+  .page-wrap { padding:0 !important; }
+}
 </style>
+<script>
+${waScript}
+${mailScript}
+<\/script>
 </head>
-<body style="padding:20px;max-width:800px;margin:0 auto">
+<body>
+<div class="page-wrap" style="max-width:820px;margin:0 auto;padding:16px">
 
-  <!-- PRINT BUTTON -->
-  <div class="no-print" style="margin-bottom:16px;text-align:center">
-    <button onclick="window.print()" style="background:#c0001a;color:white;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-left:8px">🖨️ הדפס / שמור PDF</button>
-    <button onclick="window.close()" style="background:#f5f4f0;color:#333;border:1px solid #ddd;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer">✕ סגור</button>
+  <!-- ACTION BAR -->
+  <div class="no-print" style="background:#f5f4f0;border:1px solid #ddd;border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:2px">הדוח מוכן לשיתוף</div>
+      <div style="font-size:11px;color:#666">${mode==='wa'?'לחץ לשליחה ב-WhatsApp – התמונות לא יכללו בטקסט (יש לצרפן ידנית)':mode==='mail'?'לחץ לשליחת מייל לכתובת שהוגדרה':'לחץ הדפס → שמור כ-PDF → שתף ב-WhatsApp'}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${actionBtn}
+      <button onclick="window.print()" style="background:white;color:#333;border:1px solid #ddd;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">🖨️ PDF</button>
+      <button onclick="window.close()" style="background:white;color:#888;border:1px solid #ddd;padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer">✕</button>
+    </div>
   </div>
 
   <!-- HEADER -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#c0001a;border-radius:10px 10px 0 0;color:white;margin-bottom:0">
-    <img src="${NIR_LOGO}" style="height:50px;object-fit:contain;filter:brightness(0) invert(1)">
-    <div style="text-align:center">
-      <div style="font-size:18px;font-weight:700">צ'ק ליסט מפעל - ניר עציון</div>
-      <div style="font-size:12px;opacity:.85;margin-top:2px">בדיקת ניקיון – פתיחת יום עבודה</div>
+  <div style="background:#c0001a;border-radius:10px 10px 0 0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
+    <img src="${NIR_LOGO}" style="height:52px;object-fit:contain;filter:brightness(0) invert(1)">
+    <div style="text-align:center;color:white">
+      <div style="font-size:19px;font-weight:700">צ׳ק ליסט מפעל – ניר עציון</div>
+      <div style="font-size:11px;opacity:.85;margin-top:3px">בדיקת ניקיון פתיחת יום עבודה</div>
     </div>
-    <img src="${NEAT_LOGO}" style="height:36px;object-fit:contain;filter:brightness(0) invert(1)">
+    <img src="${NEAT_LOGO}" style="height:38px;object-fit:contain;filter:brightness(0) invert(1)">
   </div>
 
-  <!-- META TABLE -->
-  <table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;margin-bottom:16px">
-    <tr style="background:#f5f4f0">
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;width:120px;border-bottom:1px solid #ddd">תאריך:</td>
-      <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #ddd">${date}</td>
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;width:80px;border-bottom:1px solid #ddd">שעה:</td>
-      <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #ddd">${time}</td>
+  <!-- META ROW -->
+  <table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;margin-bottom:16px;background:#fafaf8">
+    <tr>
+      <td style="padding:8px 14px;font-size:11px;font-weight:700;color:#555;border-bottom:1px solid #eee;border-left:1px solid #eee">תאריך</td>
+      <td style="padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid #eee;border-left:1px solid #eee">${date}</td>
+      <td style="padding:8px 14px;font-size:11px;font-weight:700;color:#555;border-bottom:1px solid #eee;border-left:1px solid #eee">שעה</td>
+      <td style="padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid #eee;border-left:1px solid #eee">${time}</td>
+      <td style="padding:8px 14px;font-size:11px;font-weight:700;color:#555;border-bottom:1px solid #eee;border-left:1px solid #eee">מיקום</td>
+      <td style="padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid #eee">מפעל</td>
     </tr>
-    <tr style="background:white">
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;border-bottom:1px solid #ddd">מיקום:</td>
-      <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #ddd">מפעל</td>
-      <td style="padding:8px 12px;font-size:12px;font-weight:700;border-bottom:1px solid #ddd">ממלא:</td>
-      <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #ddd">${name}</td>
-    </tr>
-    <tr style="background:#f5f4f0">
-      <td style="padding:8px 12px;font-size:12px;font-weight:700">סיכום:</td>
-      <td colspan="3" style="padding:8px 12px">
-        <span style="color:#3b6d11;font-weight:700;font-size:14px">✓ ${totalOk} תקין</span>
-        &nbsp;&nbsp;
-        <span style="color:#c0001a;font-weight:700;font-size:14px">✗ ${totalBad} לא תקין</span>
-        &nbsp;&nbsp;
-        <span style="color:#888;font-size:13px">— ${totalNa} לא נבדק</span>
+    <tr>
+      <td style="padding:8px 14px;font-size:11px;font-weight:700;color:#555;border-left:1px solid #eee">שם הממלא</td>
+      <td colspan="3" style="padding:8px 14px;font-size:13px;font-weight:600;border-left:1px solid #eee">${name}</td>
+      <td style="padding:8px 14px;font-size:11px;font-weight:700;color:#555;border-left:1px solid #eee">סיכום</td>
+      <td style="padding:8px 14px">
+        <span style="color:#2a6000;font-weight:700">✓ ${totalOk}</span>&nbsp;&nbsp;
+        <span style="color:#c0001a;font-weight:700">✗ ${totalBad}</span>&nbsp;&nbsp;
+        <span style="color:#888">— ${totalNa}</span>
       </td>
     </tr>
   </table>
@@ -666,81 +784,59 @@ function buildPDFHtml() {
   <!-- DEPT SECTIONS -->
   ${deptsHTML}
 
+  <!-- WA TEXT AREA (hidden, for copy/send) -->
+  ${mode!=='pdf'?`
+  <div class="no-print" style="margin-top:20px;border:1px solid #ddd;border-radius:8px;overflow:hidden">
+    <div style="background:#f0f0f0;padding:8px 12px;font-size:11px;font-weight:700;color:#555;display:flex;justify-content:space-between;align-items:center">
+      <span>טקסט לשליחה (ניתן לעריכה)</span>
+      <button onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('wa-text').value)" style="background:none;border:1px solid #ccc;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:11px">העתק</button>
+    </div>
+    <textarea id="wa-text" style="width:100%;height:200px;padding:10px;font-size:11px;font-family:monospace;border:none;resize:vertical;direction:rtl">${plainText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+  </div>`:''}
+
   <!-- FOOTER -->
-  <div style="margin-top:24px;padding-top:10px;border-top:1px solid #ddd;text-align:center;font-size:10px;color:#888">
-    הופק על ידי מערכת ניר עציון | NEAT Flavor Festival | ${date} ${time}
+  <div style="margin-top:20px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#aaa">
+    <span>הופק על ידי מערכת ניר עציון | NEAT Flavor Festival</span>
+    <span>${date} ${time}</span>
   </div>
 
-
-<style>
-.ejs-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center;padding:16px}
-.ejs-box{background:white;border-radius:16px;padding:20px;width:100%;max-width:420px;direction:rtl}
-.ejs-box h2{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
-.ejs-box p{font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.5}
-.ejs-box a{color:var(--blue)}
-.ejs-field{margin-bottom:10px}
-.ejs-field label{font-size:11px;color:var(--text2);font-weight:500;display:block;margin-bottom:3px}
-.ejs-field input{width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--gray);color:var(--text);outline:none;font-family:inherit}
-.ejs-field input:focus{border-color:var(--blue);background:white}
-.ejs-row{display:flex;gap:8px;margin-top:14px}
-.ejs-save{flex:1;padding:10px;background:var(--red);color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.ejs-cancel{padding:10px 14px;background:white;color:var(--text2);border:1.5px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer}
-.ejs-note{font-size:11px;color:#888;margin-top:12px;padding:10px;background:var(--gray);border-radius:8px;line-height:1.6}
-.ejs-note b{color:var(--text)}
-</style>
-
-<div class="ejs-modal" id="ejs-modal" onclick="if(event.target===this)this.style.display='none'">
-  <div class="ejs-box">
-    <h2>⚙️ הגדרות שליחת מייל</h2>
-    <p>לשליחת מיילים ישירה מהאפליקציה נדרש חשבון EmailJS חינמי.<br>
-    <a href="https://www.emailjs.com" target="_blank">emailjs.com</a> → צור חשבון → Service → Template → קבל Public Key</p>
-
-    <div class="ejs-field">
-      <label>Public Key</label>
-      <input id="ejs-pub" type="text" placeholder="user_xxxxxxxxxxxxxxx" autocomplete="off">
-    </div>
-    <div class="ejs-field">
-      <label>Service ID</label>
-      <input id="ejs-svc" type="text" placeholder="service_xxxxxxx" autocomplete="off">
-    </div>
-    <div class="ejs-field">
-      <label>Template ID</label>
-      <input id="ejs-tpl" type="text" placeholder="template_xxxxxxx" autocomplete="off">
-    </div>
-
-    <div class="ejs-note">
-      <b>משתנים לתבנית ה-Template:</b><br>
-      {{to_email}} · {{subject}} · {{inspector}} · {{date}} · {{location}} · {{summary}} · {{issues}} · {{full_report}}
-    </div>
-
-    <div class="ejs-row">
-      <button class="ejs-cancel" onclick="document.getElementById('ejs-modal').style.display='none'">ביטול</button>
-      <button class="ejs-save" onclick="saveEmailSetup()">שמור הגדרות</button>
-    </div>
-  </div>
 </div>
 </body>
 </html>`;
 }
 
-function dlPDF() {
-  if(!validate()) return;
-  showToast('מכין דוח...');
-  const html = buildPDFHtml();
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const w = window.open(url, '_blank');
-  if(!w) {
-    // fallback: download as file
-    const a = document.createElement('a');
-    a.href = url;
-    const date = document.getElementById('meta-date').value;
-    const name = document.getElementById('meta-name').value;
-    a.download = `דוח_${date}_${name}.html`;
-    a.click();
+
+function generateReport(mode) {
+  if (!validate()) return;
+  showToast('בונה דוח...');
+  const date = document.getElementById('meta-date').value;
+  const name = document.getElementById('meta-name').value;
+
+  // Build the full PDF HTML with mode baked in
+  const reportHtml = buildPDFHtml(mode);
+  const blob = new Blob([reportHtml], {type: 'text/html;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+
+  if (mode === 'pdf') {
+    // Open in new tab → user presses Print → Save as PDF
+    const w = window.open(url, '_blank');
+    if (!w) {
+      const a = document.createElement('a');
+      a.href = url; a.download = `דוח_${date}_${name}.html`; a.click();
+    }
+    showToast('לחץ "הדפס" ← "שמור כ-PDF"');
+  } else if (mode === 'wa') {
+    // Open report page – it shows a "Share via WhatsApp" button
+    const w = window.open(url, '_blank');
+    if (!w) { showToast('אפשר חלונות קופצים ונסה שוב'); }
+    showToast('הדוח נפתח – שתף מהדפדפן');
+  } else if (mode === 'mail') {
+    // Open report page – it shows an email send button
+    const w = window.open(url, '_blank');
+    if (!w) { showToast('אפשר חלונות קופצים ונסה שוב'); }
+    showToast('הדוח נפתח – שלח במייל');
   }
-  URL.revokeObjectURL(url);
-  showToast('הדוח נפתח בחלון חדש');
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 function shareMail() {
