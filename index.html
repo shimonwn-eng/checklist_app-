@@ -132,6 +132,7 @@ html, body { height: 100%; background: #f2f0eb; font-family: -apple-system, 'Seg
 .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: #222; color: white; padding: 8px 18px; border-radius: 20px; font-size: 13px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
 .toast.show { opacity: 1; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -173,7 +174,10 @@ html, body { height: 100%; background: #f2f0eb; font-family: -apple-system, 'Seg
 
 <div class="actions-bar">
   <button class="btn-wa" onclick="shareWA()">📱 WhatsApp</button>
-  <button class="btn-mail" onclick="shareMail()">✉ אימייל</button>
+  <div style="display:flex;gap:6px">
+    <button class="btn-mail" onclick="shareMail()" style="flex:1">✉ אימייל</button>
+    <button onclick="openEmailSetup()" title="הגדרות מייל" style="background:white;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 12px;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent">⚙️</button>
+  </div>
   <button class="btn-pdf" onclick="dlPDF()">📄 הורד דוח PDF</button>
 </div>
 
@@ -414,29 +418,85 @@ function shareWA() {
   window.open('https://wa.me/?text='+encodeURIComponent(buildReport()),'_blank');
 }
 
+// ── EmailJS send ──────────────────────────────────────────────
+function getEJSConfig() {
+  return {
+    publicKey:  localStorage.getItem('ejs_pub')  || '',
+    serviceId:  localStorage.getItem('ejs_svc')  || '',
+    templateId: localStorage.getItem('ejs_tpl')  || ''
+  };
+}
+function openEmailSetup() {
+  const cfg = getEJSConfig();
+  document.getElementById('ejs-pub').value = cfg.publicKey;
+  document.getElementById('ejs-svc').value = cfg.serviceId;
+  document.getElementById('ejs-tpl').value = cfg.templateId;
+  document.getElementById('ejs-modal').style.display = 'flex';
+}
+function saveEmailSetup() {
+  localStorage.setItem('ejs_pub', document.getElementById('ejs-pub').value.trim());
+  localStorage.setItem('ejs_svc', document.getElementById('ejs-svc').value.trim());
+  localStorage.setItem('ejs_tpl', document.getElementById('ejs-tpl').value.trim());
+  document.getElementById('ejs-modal').style.display = 'none';
+  showToast('הגדרות מייל נשמרו ✓');
+}
 function shareMail() {
-  if(!validate()) return;
-  const date=document.getElementById('meta-date').value;
-  const name=document.getElementById('meta-name').value;
-  const emailVal=document.getElementById('meta-email').value.trim();
-
-  if(!emailVal) {
+  if (!validate()) return;
+  const emailVal = document.getElementById('meta-email').value.trim();
+  if (!emailVal) {
     showToast('יש להזין כתובת מייל בתחילת הטופס');
     document.getElementById('meta-email').focus();
-    document.getElementById('meta-email').style.borderColor='var(--danger-border)';
+    document.getElementById('meta-email').style.borderColor = 'var(--danger-border)';
     return;
   }
-  if(!validateEmail(emailVal)) {
+  if (!validateEmail(emailVal)) {
     showToast('כתובת המייל אינה תקינה');
     document.getElementById('meta-email').focus();
-    document.getElementById('meta-email').style.borderColor='var(--danger-border)';
+    document.getElementById('meta-email').style.borderColor = 'var(--danger-border)';
     return;
   }
-
-  document.getElementById('meta-email').style.borderColor='var(--border)';
-  const sub=encodeURIComponent(`בדיקת פתיחת יום עבודה – ${date} – ${name}`);
-  window.location.href=`mailto:${encodeURIComponent(emailVal)}?subject=${sub}&body=${encodeURIComponent(buildReport())}`;
-  showToast(`שולח דוח אל ${emailVal}...`);
+  document.getElementById('meta-email').style.borderColor = 'var(--border)';
+  const cfg = getEJSConfig();
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
+    openEmailSetup();
+    showToast('נא להגדיר את חשבון EmailJS תחילה');
+    return;
+  }
+  const date = document.getElementById('meta-date').value;
+  const name = document.getElementById('meta-name').value;
+  let totalOk=0, totalBad=0, totalNa=0, issueLines=[];
+  DEPTS.forEach(d => {
+    Object.entries(state[d.id].items).forEach(([item, v]) => {
+      if (v.status==='ok') totalOk++;
+      else if (v.status==='bad') { totalBad++; issueLines.push('\u2022 '+d.name+': '+item+(v.note?' – '+v.note:'')); }
+      else if (v.status==='na') totalNa++;
+    });
+  });
+  const summaryLine = '✓ '+totalOk+' תקין | ✗ '+totalBad+' ליקויים | — '+totalNa+' לא נבדק';
+  const issueBlock  = issueLines.length ? '\n\nליקויים:\n' + issueLines.join('\n') : '\n\nכל הפריטים תקינים ✓';
+  const templateParams = {
+    to_email:    emailVal,
+    subject:     'בדיקת פתיחת יום עבודה – '+date+' – '+name,
+    inspector:   name,
+    date:        date,
+    location:    'מפעל ניר עציון',
+    summary:     summaryLine,
+    issues:      issueBlock,
+    full_report: buildReport()
+  };
+  showToast('שולח מייל...');
+  document.querySelector('.btn-mail').disabled = true;
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId, cfg.templateId, templateParams)
+    .then(() => {
+      showToast('✓ המייל נשלח אל '+emailVal);
+      document.querySelector('.btn-mail').disabled = false;
+    })
+    .catch(err => {
+      console.error('EmailJS error:', err);
+      showToast('שגיאה בשליחה – בדוק הגדרות EmailJS');
+      document.querySelector('.btn-mail').disabled = false;
+    });
 }
 
 
@@ -611,6 +671,54 @@ function buildPDFHtml() {
     הופק על ידי מערכת ניר עציון | NEAT Flavor Festival | ${date} ${time}
   </div>
 
+
+<style>
+.ejs-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center;padding:16px}
+.ejs-box{background:white;border-radius:16px;padding:20px;width:100%;max-width:420px;direction:rtl}
+.ejs-box h2{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.ejs-box p{font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.ejs-box a{color:var(--blue)}
+.ejs-field{margin-bottom:10px}
+.ejs-field label{font-size:11px;color:var(--text2);font-weight:500;display:block;margin-bottom:3px}
+.ejs-field input{width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--gray);color:var(--text);outline:none;font-family:inherit}
+.ejs-field input:focus{border-color:var(--blue);background:white}
+.ejs-row{display:flex;gap:8px;margin-top:14px}
+.ejs-save{flex:1;padding:10px;background:var(--red);color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.ejs-cancel{padding:10px 14px;background:white;color:var(--text2);border:1.5px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer}
+.ejs-note{font-size:11px;color:#888;margin-top:12px;padding:10px;background:var(--gray);border-radius:8px;line-height:1.6}
+.ejs-note b{color:var(--text)}
+</style>
+
+<div class="ejs-modal" id="ejs-modal" onclick="if(event.target===this)this.style.display='none'">
+  <div class="ejs-box">
+    <h2>⚙️ הגדרות שליחת מייל</h2>
+    <p>לשליחת מיילים ישירה מהאפליקציה נדרש חשבון EmailJS חינמי.<br>
+    <a href="https://www.emailjs.com" target="_blank">emailjs.com</a> → צור חשבון → Service → Template → קבל Public Key</p>
+
+    <div class="ejs-field">
+      <label>Public Key</label>
+      <input id="ejs-pub" type="text" placeholder="user_xxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="ejs-field">
+      <label>Service ID</label>
+      <input id="ejs-svc" type="text" placeholder="service_xxxxxxx" autocomplete="off">
+    </div>
+    <div class="ejs-field">
+      <label>Template ID</label>
+      <input id="ejs-tpl" type="text" placeholder="template_xxxxxxx" autocomplete="off">
+    </div>
+
+    <div class="ejs-note">
+      <b>משתנים לתבנית ה-Template:</b><br>
+      {{to_email}} · {{subject}} · {{inspector}} · {{date}} · {{location}} · {{summary}} · {{issues}} · {{full_report}}
+    </div>
+
+    <div class="ejs-row">
+      <button class="ejs-cancel" onclick="document.getElementById('ejs-modal').style.display='none'">ביטול</button>
+      <button class="ejs-save" onclick="saveEmailSetup()">שמור הגדרות</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>`;
 }
